@@ -64,6 +64,7 @@ function startNode() {
   });
 
   child.on('exit', function (code, signal) {
+// console.log('xxx', arguments);
     // this is nasty, but it gives it windows support
     if (isWindows && signal == 'SIGTERM') signal = 'SIGUSR2';
     // exit the monitor, but do it gracefully
@@ -116,10 +117,16 @@ function startMonitor() {
       // recursive watch - watch each directory and it's subdirectories, etc, etc
       var watch = function (err, dir) {
         try {
-          fs.watch(dir, { persistent: false }, function (event, filename) {
+          var m = fs.watch(dir, { persistent: false }, function (event, filename) {
+// console.log(event, filename);
             var filepath = path.join(dir, filename);
             callback([filepath]);
           });
+var fn = m._handle.onchange;
+m._handle.onchange = function (x, y, filename) {
+  if (filename !== 'sessions.json') { console.log(arguments); }
+  fn.apply(this, arguments);
+};
 
           fs.readdir(dir, function (err, files) {
             if (!err) {
@@ -147,7 +154,9 @@ function startMonitor() {
   }
 
   var cwd = process.cwd();
+// console.log(changeFunction + '', lastStarted);
   changeFunction(lastStarted, function (files) {
+// console.log('x', files.length, files);
     if (files.length) {
       // filter ignored files
       if (ignoreFiles.length) {
@@ -176,7 +185,7 @@ function startMonitor() {
         });
       }
 
-
+// console.log('m', files.length, files);
       if (files.length) {
         if (restartTimer !== null) clearTimeout(restartTimer);
         restartTimer = setTimeout(function () {
@@ -221,7 +230,7 @@ function readIgnoreFile(curr, prev) {
 
   // Check if ignore file still exists. Vim tends to delete it before replacing with changed file
   exists(ignoreFilePath, function(exists) {
-    if (program.options.verbose) util.log('[nodemon] reading ignore list');
+    // if (program.options.verbose) util.log('[nodemon] reading ignore list');
 
     // ignoreFiles = ignoreFiles.concat([flag, ignoreFilePath]);
     // addIgnoreRule(flag);
